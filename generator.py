@@ -1,6 +1,10 @@
 
 from pathlib import Path
 import csv
+from classes import Theme
+
+from PIL import Image
+from io import BytesIO
 
 from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
@@ -14,10 +18,61 @@ OUTPUT_DIR = Path("dataset")
 
 # Temas Catppuccin
 THEMES = [
-    "catppuccin-mocha",
-    "catppuccin-macchiato",
-    "catppuccin-frappe",
-    "catppuccin-latte"
+    Theme("catppuccin-mocha", "mocha"),
+    Theme("catppuccin-macchiato", "macchiato"),
+    Theme("catppuccin-frappe", "frappe"),
+    Theme("catppuccin-latte", "latte"),
+
+    Theme('abap'),
+    Theme('algol'),
+    Theme('algol_nu'),
+    Theme('arduino'),
+    Theme('autumn'),
+    Theme('bw'),
+    Theme('borland'),
+    Theme('coffee'),
+    Theme('colorful'),
+    Theme('default'),
+    Theme('dracula'),
+    Theme('emacs'),
+    Theme('friendly_grayscale'),
+    Theme('friendly'),
+    Theme('fruity'),
+    Theme('github-dark'),
+    Theme('gruvbox-dark'),
+    Theme('gruvbox-light'),
+    Theme('igor'),
+    Theme('inkpot'),
+    Theme('lightbulb'),
+    Theme('lilypond'),
+    Theme('lovelace'),
+    Theme('manni'),
+    Theme('material'),
+    Theme('monokai'),
+    Theme('murphy'),
+    Theme('native'),
+    Theme('night-owl'),
+    Theme('nord-darker'),
+    Theme('nord'),
+    Theme('one-dark'),
+    Theme('paraiso-dark'),
+    Theme('paraiso-light'),
+    Theme('pastie'),
+    Theme('perldoc'),
+    Theme('rainbow_dash'),
+    Theme('rrt'),
+    Theme('sas'),
+    Theme('solarized-dark'),
+    Theme('solarized-light'),
+    Theme('staroffice'),
+    Theme('stata-dark'),
+    Theme('stata-light'),
+    Theme('tango'),
+    Theme('trac'),
+    Theme('vim'),
+    Theme('vs'),
+    Theme('xcode'),
+    Theme('zenburn'),
 ]
 
 # Extensões aceitas
@@ -31,9 +86,13 @@ SUPPORTED_EXTENSIONS = {
 }
 
 # Configurações visuais
-FONT_NAME = "JetBrainsMonoNL Nerd Font Mono"
+# FONT_NAME = "JetBrainsMonoNL Nerd Font Mono"
+FONT_NAME = "Bitstream Vera Sans Mono"
 FONT_SIZE = 16
 IMAGE_PADDING = 20
+
+# Resize as imagens para 640px por 640px
+TRANSFORM_SIZE = (640, 640)
 
 
 def render_code(
@@ -72,8 +131,7 @@ def render_code(
 
     for theme in THEMES:
         formatter = ImageFormatter(
-            style=theme,
-            font_name=FONT_NAME,
+            style=theme.theme,
             font_size=FONT_SIZE,
             line_numbers=False,
             image_pad=IMAGE_PADDING,
@@ -83,22 +141,32 @@ def render_code(
         try:
             image = highlight(code, lexer, formatter)
 
-            output_file = output_folder / f"{theme.removeprefix('catppuccin-')}.png"
+            img = resizeImage(image)
 
-            output_file.write_bytes(image)
+            output_file = output_folder / f"{theme.foldername}.png"
+
+            img.save(output_file)
 
             manifest_rows.append({
                 "source_id": f"{language}/{relative_path.as_posix()}",
                 "language": language,
-                "theme": theme,
+                "theme": theme.theme,
                 "image_path": str(output_file),
             })
 
             print(f"[OK] {output_file}")
 
         except Exception as error:
-            print(f"[ERROR] {source_file} ({theme}): {error}")
+            print(f"[ERROR] {source_file} ({theme.theme}): {error}")
 
+def resizeImage(image):
+    img = Image.open(BytesIO(image))
+
+    new_size = TRANSFORM_SIZE
+
+    img = img.resize(new_size, Image.Resampling.LANCZOS)
+
+    return img
 
 def main():
     if not INPUT_DIR.exists():
